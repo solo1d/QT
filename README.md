@@ -1,19 +1,22 @@
 ## 目录
 
 - [QT笔记](#QT笔记)
+- [头文件说明](#头文件说明)
+- [工程文件说明](#工程文件说明)
+- [详细类对象说明](#详细类对象说明)
+- [宏和类说明](#宏和类说明)
 - [信号和槽](#信号和槽)
   - [自定义信号和槽](#自定义信号和槽)
   - [按钮发出信号触发自定义的槽函数](#按钮发出信号触发自定义的槽函数)
   - [使用Lambda表达式来触发自定义槽函数](#使用Lambda表达式来触发自定义槽函数)
   - [1信号连接槽函数,2信号再连接1信号](#1信号连接槽函数,2信号再连接1信号)
   - [断开信号和槽的连接](#断开信号和槽的连接)
-- [头文件说明](#头文件说明)
-- [工程文件说明](#工程文件说明)
-- [详细类对象说明](#详细类对象说明)
-- [宏和类说明](#宏和类说明)
 - [按钮和窗口标题以及窗口固定大小](#按钮和窗口标题以及窗口固定大小)
+- [菜单栏和工具栏](#菜单栏和工具栏)
 - [网络](#网络)
 - [QString转chat*](#QString转chat*)
+- [添加QT资源文件](#添加QT资源文件)
+- [对话框](#对话框)
 - 
 
 
@@ -47,6 +50,123 @@
   - **一定程度上简化了内存回收**
 
 - **显示中文时, 一定要设置UTF-8来进行输出**
+
+
+
+## 头文件说明
+
+```c++
+<QApplication>  包含一个应用程序类的头文件 
+<QWidget>       窗口类
+<QPushButton>   使用按钮需要包含该头文件  QPushButton
+<QMenuBar>      菜单栏头文件   QMenuBar
+<QToolBar>      工具栏头文件   QToolBar
+<QLabel>        状态栏提示信息文本,标签部件
+<QStatusBar>    状态栏
+<QDockWidget>   浮动窗口(铆接部件)
+<QTextEdit>     文本编辑器(可以是中心部件, 很常用)
+<QDialog>       对话框(拟态和非拟态)
+<QMessageBox>   系统标准的成员函数
+<QColorDialog>  选择颜色对话框
+<QFileDialog>   文件选择对话框
+<QDebug>        调试信息,可以输出一些调试内容和文本,   qDebug() << "内容";
+```
+
+
+
+## 工程文件说明
+
+**工程文件就是以项目名命名的 `ProjectName.pro` 文件**
+
+```c++
+// Qt包含的模块,默认包含了两个模块 core核心模块 和 gui图像模块, qmake 表示需要添加到这里的模块名称
+QT       += core gui
+  
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets   //大于4版本, 包含widget模块, 为了兼容旧版本.
+  
+CONFIG += c++      //使用c++11版本和特性
+DEFINES += QT_DEPRECATED_WARNINGS   //定义 QT的警告
+TARGET = 01FirstPerject   // 目标 就是生成的应用程序的名称
+TEMPLATE = app       // 模版 app应用程序模版,有lib  vclib 等等的项目文件.就是生产出来的程序,还是动态库
+  
+// 项目中包含的源文件
+SOURCES += \
+    main.cpp \
+    mywidget.cpp
+
+// 项目中包含的源头文件
+HEADERS += \
+    mywidget.h
+
+// ui界面文件
+FORMS += \	
+    mainwindow.ui
+  
+// 部署的默认规则
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target
+```
+
+
+
+
+
+## 详细类对象说明
+
+- **`QApplication a(argc, argv);`  // a是应用程序对象, 在QT中该对象 有且仅有一个,该对象必须存在一个**
+
+```c++
+#include <QApplication>    /* 包含一个应用程序类的头文件 */
+int main(int argc, char* argv[])
+{
+  // argc是参数的数量, argv保存的参数.   鼠标和键盘的所有输入都会在这个变量中体现
+  
+  QApplication a(argc, argv);   
+  /* 这个对象a 应用程序对象, 保存了所有的键盘和鼠标的输入
+   * 在QT中该对象 有且仅有一个
+   */
+  
+  Widget w;
+  /* 窗口对象. 这个类继承于 QWidget 类, 这个类就是空窗口
+   * 窗口对象在创建后并不会直接显示出来,必须要调用方法.
+   */
+  
+  w.show(); 
+  // 显示窗口, 必须手动调用这个方法来显示.
+  
+  int ret = a.exec();
+  /* 让应用程序对象进入消息循环(死循环)
+   * 消息循环中,会持续捕获和等待键盘和鼠标的输入,直到退出该应用
+   */
+  
+  return ret;
+}
+```
+
+
+
+
+
+
+
+## 宏和类说明
+
+```c++
+#include <QWidget>
+
+class myWidget : public QWidget
+{
+private:
+  
+    Q_OBJECT
+/* 这个宏必须出现在类定义的私有部分中,允许该类声明其自身的信号和插槽，或者使用Qt的元对象系统提供的其他服务 */
+
+public:
+    myWidget(QWidget *parent = nullptr);
+    ~myWidget();
+};
+```
 
 
 
@@ -372,114 +492,9 @@ disconnect(this->zt, teacherSignal2, this->st, studentSlot2);
 
 
 
-## 头文件说明
-
-```c++
-<QApplication>  包含一个应用程序类的头文件 
-<QWidget>       窗口类
-<QPushButton>   使用按钮需要包含该头文件  QPushButton
-<QMenuBar>      菜单栏头文件   QMenuBar
-<QToolBar>      工具栏头文件   QToolBar
-<QLabel>        状态栏提示信息文本
-<QStatusBar>    状态栏
-<QDockWidget>   浮动窗口(铆接部件)
-<QTextEdit>     文本编辑器(可以是核心部件)
-<QDialog>       对话框(拟态和非拟态)
-<QMessageBox>   系统标准的成员函数
-<QColorDialog>  选择颜色对话框
-<QFileDialog>   文件选择对话框
-<QDebug>        调试信息,可以输出一些调试内容和文本,   qDebug() << "内容";
-```
 
 
 
-## 工程文件说明
-
-**工程文件就是以项目名命名的 `ProjectName.pro` 文件**
-
-```c++
-// Qt包含的模块,默认包含了两个模块 core核心模块 和 gui图像模块, qmake 表示需要添加到这里的模块名称
-QT       += core gui
-  
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets   //大于4版本, 包含widget模块, 为了兼容旧版本.
-  
-CONFIG += c++      //使用c++11版本和特性
-DEFINES += QT_DEPRECATED_WARNINGS   //定义 QT的警告
-TARGET = 01FirstPerject   // 目标 就是生成的应用程序的名称
-TEMPLATE = app       // 模版 app应用程序模版,有lib  vclib 等等的项目文件.就是生产出来的程序,还是动态库
-  
-// 项目中包含的源文件
-SOURCES += \
-    main.cpp \
-    mywidget.cpp
-
-// 项目中包含的源头文件
-HEADERS += \
-    mywidget.h
-
-// 部署的默认规则
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
-```
-
-
-
-
-
-## 详细类对象说明
-
-- **`QApplication a(argc, argv);`  // a是应用程序对象, 在QT中该对象 有且仅有一个,该对象必须存在一个**
-
-```c++
-#include <QApplication>    /* 包含一个应用程序类的头文件 */
-int main(int argc, char* argv[])
-{
-  // argc是参数的数量, argv保存的参数.   鼠标和键盘的所有输入都会在这个变量中体现
-  
-  QApplication a(argc, argv);   
-  /* 这个对象a 应用程序对象, 保存了所有的键盘和鼠标的输入
-   * 在QT中该对象 有且仅有一个
-   */
-  
-  Widget w;
-  /* 窗口对象. 这个类继承于 QWidget 类, 这个类就是空窗口
-   * 窗口对象在创建后并不会直接显示出来,必须要调用方法.
-   */
-  
-  w.show(); 
-  // 显示窗口, 必须手动调用这个方法来显示.
-  
-  int ret = a.exec();
-  /* 让应用程序对象进入消息循环(死循环)
-   * 消息循环中,会持续捕获和等待键盘和鼠标的输入,直到退出该应用
-   */
-  
-  return ret;
-}
-```
-
-
-
-
-
-## 宏和类说明
-
-```c++
-#include <QWidget>
-
-class myWidget : public QWidget
-{
-private:
-  
-    Q_OBJECT
-/* 这个宏必须出现在类定义的私有部分中,允许该类声明其自身的信号和插槽，或者使用Qt的元对象系统提供的其他服务 */
-
-public:
-    myWidget(QWidget *parent = nullptr);
-    ~myWidget();
-};
-```
 
 
 
@@ -592,6 +607,182 @@ int main(int argc, char *argv[])
 
 
 
+## 菜单栏和工具栏
+
+> **需要将项目创建为`MainWindow`, 并且将菜单和工具栏等内容写到 `QMainWindows` 的构造函数内.**
+>
+> **需要头文件`<QApplication>` ,`<QMainWindow>` , `<QToolBar>` , `<QMenuBar>`**
+>
+> **`QMainWindow` 是一个为用户提供 主窗口程序的类.包含:**
+>
+> - **一个菜单栏 (menu bar):**
+>   - 头文件`<QMenuBar>`
+>   - 创建菜单栏 `QMenuBar* bar = menuBar(); //menuBar()系统函数,返回一个菜单栏对象`
+>   - 将菜单栏添加到窗口中 `setMenuBar(bar);`
+> - **多个工具栏 (tool bars):**
+>   - 头文件`<QToolBar>`
+>   - 创建工具栏`QToolBar* toolBar = new QToolBar(this);  //多种构造函数`
+>   - 添加到窗口中,并初始化默认停靠位置 `addToolBar(Qt::LeftToolBarArea,toolBar);`
+> - **多个铆接部件或浮动窗口部件 (bock windgets):**
+>   - 头文件 `<QDockWidget>`
+>   - 创建一个铆接部件`QDockWidget* dockWigdet = new QDockWidget("浮动", this);`
+>   - `addDockWidget(Qt::BottomDockWidgetArea, dockWigdet);   //独立设置到窗口中, 并设置默认位置,铆接部件的位置是围绕着中心部件 去定位的`
+> - **一个状态栏 (status bar):**
+>   - 头文件`<QStatusBar>`
+>   - 创建一个状态栏 `QStatusBar* stBar  =  statusBar(); `
+>   - 添加到窗口中 `setStatusBar(stBar);`
+> - **标签控件,可以添加到状态栏中,也可以添加到其他栏中**
+>   - 头文件`<QLabel>`
+>   - 创建一个标签控件 `QLabel* label = new QLabel("提示信息",this);`
+> - **一个中心部件( central widget):**
+>   - 头文件`<QTextEdit>`, 其中一种中心部件,文本编辑器
+>   - 创建一个中心部件`QTextEdit*edit = new QTextEdit();   //创建一个文本编辑器的中心部件`
+>   - 将中心部件添加到窗口中`setCentralWidget(edit);   //设置中心部件`
+
+```c++
+ #include <QApplication>
+#include <QMainWindow>
+#include <QWidget>
+#include <QMenuBar>
+#include <QToolBar>
+#include <QPushButton>
+#include <QStatusBar>
+#include <QTextEdit>
+
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+};
+
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+{
+    resize(600,400);  //重制窗口大小
+
+
+/* 菜单栏 */
+    //创建菜单栏  menu Bar, 该对象只可以存在一个
+    QMenuBar* bar =  menuBar();  //系统提供的方法,会直接在对象树上
+
+    //将菜单栏放入窗口中,与绑定类似, 系统提供的方法
+    // 目前还是空栏, 所以什么都不显示
+    setMenuBar(bar) ;
+
+    //创建菜单栏中的 菜单(方法) ,返回值QMenu可以用来创建菜单项, 也就是二级页面
+    QMenu *fileMenu =  bar->addMenu("文件");
+    QMenu *editMenu =  bar->addMenu("编辑");
+
+    // 菜单栏中的方法, 必须拥有菜单项才可以显示出来(macos)
+    // 点击菜单栏中的文件,就会在文件下面弹出二级页面,里面就会出现新建
+    // 存在多个时,会按照顺序创建
+    // QAction* 返回值是给工具栏使用的, 可以让工具栏拥有和这个 菜单选项相同的功能
+    QAction* newAction =  fileMenu->addAction("新建");
+    fileMenu->addSeparator();  //分隔符,分割二级页面中相邻的两项,可以更直观的看到内容
+    QAction* openAction = fileMenu->addAction("打开");
+    editMenu->addAction("全选");
+
+    //在 文件 菜单栏中创建 历史二级页面, 这个历史里面会存在一个三级页面
+    QMenu* fileMenu1 =  fileMenu->addMenu("历史");
+
+    //在三级页面中创建一个方法
+    fileMenu1->addAction("最近历史");
+      
+    //点击新建会重命名 主窗口名称, 信号和槽, 发送 truggered 信号(点击菜单栏的新建),  会弹出一个对话框
+    // ui->actionnew 就是 newAction   ,是菜单项
+    connect(ui->actionnew, &QAction::triggered, [=](){
+			setWindowTitle("newWin");
+    });
+
+
+/* 工具栏 */
+    //创建工具栏, 可以存在多个 .
+    QToolBar* toolBar = new QToolBar(this);
+
+    // 将工具栏添加到窗口 也可以初始化默认停靠位置
+    addToolBar(Qt::LeftToolBarArea,toolBar);
+
+    //后期设置, 只允许工具栏左右停靠, 但却可以完全不停靠,直接浮动
+    toolBar->setAllowedAreas(Qt::LeftToolBarArea | Qt::RightToolBarArea /*| Qt::AllToolBarAreas */) ;
+
+    // 设置浮动开关, 不允许工具栏进行浮动了,false 就是不允许在任意位置浮动,必须停靠
+    toolBar->setFloatable(false);
+
+    // 设置移动开关, false 就是不允许移动,也不允许浮动. 哪怕再次设置浮动,也不可以进行移动
+    toolBar->setMovable(false);
+
+    //在工具栏中添加内容, 可以添加对象或文本选项 以及对应的槽函数
+    toolBar->addAction(newAction);
+    toolBar->addSeparator();   // 分割线
+    toolBar->addAction(openAction);
+
+    //工具栏中 添加控件(按钮就是控件)
+    QPushButton* btn = new QPushButton("按钮",this);
+    toolBar->addWidget(btn); // 按钮会出现在工具栏中,并且自动调整好大小和位置
+
+
+
+/* 状态栏 和 标签控件*/
+    //状态栏最多只有一个, 系统提供的方法.
+    QStatusBar* stBar  =  statusBar();
+
+    //设置到窗口中
+    setStatusBar(stBar);
+
+    //创建一个 标签控件
+    QLabel* label = new QLabel("提示信息",this);
+
+    //将标签放入状态栏中, 默认从左到右
+    stBar->addWidget(label);
+
+    QLabel* lable2 = new QLabel("右侧提示信息", this);
+
+    //将标签放入状态栏中, 默认从右到左
+    stBar->addPermanentWidget(lable2);
+
+    QLabel* lable3 = new QLabel("333", this);
+    stBar->addPermanentWidget(lable3);
+
+
+/* 铆接部件(浮动窗口),和中心部件 , 铆接部件的位置是围绕着 中心部件 去定位的*/
+    // 创建铆接部件,并添加到窗口中,  也可以独立设置到窗口中
+    QDockWidget* dockWigdet = new QDockWidget("浮动", this);
+    addDockWidget(Qt::BottomDockWidgetArea, dockWigdet);   //独立设置到窗口中, 并设置默认位置,铆接部件的位置是围绕着中心部件 去定位的
+    dockWigdet->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);  // 设置浮动窗口只可以停留在上面或下面
+
+
+    //设置中心部件
+    QTextEdit*edit = new QTextEdit();   //创建一个文本编辑器的中心部件
+    setCentralWidget(edit);   //设置中心部件
+}
+
+MainWindow::~MainWindow()
+{
+}
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
+}
+
+```
+
+
+
+
+
+
+
+
+
 # 网络
 
 > `QUdpSocket, 和 QTcpSocket 以及 QTcpServer`
@@ -606,4 +797,124 @@ int main(int argc, char *argv[])
 ```c++
 QString s = "asdasd";  std::cout << s.toUtf8().data();
 ```
+
+
+
+
+
+## 添加QT资源文件
+
+- 先把资源(图片之类的) 复制到当前项目中
+- 随后在 QT的IDE编辑器 项目 中添加新文件
+  - 会弹出一个选择模版
+    - 选择 `Qt`
+    - **再选择`Qt resource File` 资源文件**
+  - 随后给资源名称命名. 例如叫 `res`
+  - 会创建一个 叫 `res.qrc` 文件( . qrc 就是QT下的资源文件的后缀名)
+- 在IDE的项目中会出现一个 `Resources` 的目录, 使用右键点击 `Open in editor` 打开目录下的文件
+  - 在下方会有个 `Add Prefix` 添加前缀,点击它添加资源
+    - 属性内的前缀是 : `对类型的区分`
+      - 不想区分的话,给个 `/` 即可
+  - 添加前缀后再点击 `Add Files` 添加资源文件
+    - 在弹出的窗口内选择多个需要添加的文件( 图片之类的)
+- 添加完成后, 编译一次, 资源的图片内容都会存放在项目内了
+
+- 使用时 用字符串初始化`QIcon` 类
+  - 字符串表示资源所在的目录的位置 格式为 `":前缀名 + 相对路径"`
+    - `QIcon(":/png/1.png"); //  :  前缀名是 / ,png/1.png是相对路径`
+
+```c++
+ui->setupUi(this);  
+
+//添加Qt资源, 将按钮变成图标
+ui->actionNew->setIcon(QIcon(":/1/png/1.png"));   
+// : 标准写法  / 是前缀  png/1.png 是资源文件的相对路径
+// actionNew 是在ui文件中建立的菜单栏中的菜单项,也是工具栏
+
+ui->actionopen->setIcon(QIcon(":/2/2/pp.png"));
+```
+
+
+
+
+
+## 对话框
+
+- 对话框分为两类.模态对话框与非模态对话框
+  - 头文件`<QDialog>`
+- **模态对话框:**
+  - **在对话框弹出后,不可以对其他的任何窗口进行操作.**
+  - 创建一个对话框 对象,可以放在栈上`QDialog dlg (this);`
+  - 弹出对话框并进行阻塞  `dlg.exec(); //运行到这里之后,会进行阻塞, 等待这个对话框任务结束`
+- **非模态对话框:**
+  - **对话框弹出后,还可以对其他窗口进行操作和点击**
+  - 创建一个对话框对象,应该放在堆上 `QDialog* dlg2 =  new QDialog (this);`
+    - **这样的创建多次点击就多次创建, 下面是单例模式,一次点击只出现一次**
+    - `static QDialog* dlg2 =  new QDialog (this);`
+  - **弹出对话框, 但不会进行阻塞 `dlg2->show();`**
+
+```c++
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include <QMainWindow>
+#include <QDebug>
+#include <QPushButton>
+#include <QWidget>
+#include <QDialog>
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+
+    // 发送 truggered 信号(点击菜单栏的新建),  会弹出一个对话框
+    connect(ui->actionnew, &QAction::triggered, [=](){
+
+        /*
+         * 创建模态对话框, 对话框弹出后,不可以点击其他窗口
+         */
+        {
+                QDialog dlg (this);
+                dlg.resize(150,140);    // 重制一下 对话框大小,应该大于116*670
+                dlg.exec();             //运行到这里之后,会进行阻塞, 等待这个对话框任务结束
+                qDebug() << "模态对话框";
+        }
+
+        /*
+         * 创建 非模态对话框, 对话框弹出后,可以点击其他窗口, 可以弹出多个相同的 对话框
+         */
+        {
+            QDialog* dlg2 =  new QDialog (this);
+            dlg2->show();
+            dlg2->setAttribute(Qt::WA_DeleteOnClose);  //设置属性, 关闭对话框时,释放这个对象内存
+            qDebug() << "非模态对话框";
+        }
+
+        /*
+         * 创建 非模态对话框, 对话框弹出后,可以点击其他窗口, 只可以弹出一个对话框,但却占用固定内存,并且不可以手动释放掉
+         */
+        {
+            static QDialog* dlg2 =  new QDialog (this);
+            dlg2->show();
+            qDebug() << "非模态对话框";
+        }
+    });
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+
+```
+
+
+
+
+
+
+
+
 
