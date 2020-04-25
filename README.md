@@ -17,6 +17,9 @@
 - [QString转chat*](#QString转chat*)
 - [添加QT资源文件](#添加QT资源文件)
 - [对话框](#对话框)
+  - [标准对话框](#标准对话框)
+- [界面布局](#界面布局)
+- [控件](#控件)
 - 
 
 
@@ -913,6 +916,79 @@ MainWindow::~MainWindow()
 
 
 
+
+## 标准对话框
+
+- **标注对话框就是 Qt内置的一系列对话框, 包括:**
+  - `QColorDialog`  选择颜色 (非模态), 头文件`<QColorDialog>`
+  - `QFileDialog`  选择文件或目录(非模态),头文件 `<QFileDialog>`
+  - `QFontDialog`  选择字体(非模态)
+  - **`QInputDialog`   允许用户输入一个值, 并将其值返回(非模态)**
+  - **`QMessageBox` 消息对话框,用于显示信息, 询问问题等(模态).**
+    - `Question` 问题消息
+    - `Information` 信息消息
+    - `Warning`  警告消息
+    - `Critical` 错误消息
+
+```c++
+QMessageBox 拥有静态公有成员函数, 通过返回值可以判断用户按了什么按钮.
+  错误消息成员: criticel(父窗口, 标题, 显示文本内容, 出现的按钮, 回车默认按钮)
+ if (QMessageBox::Ok == \
+     QMessageBox::critical(this, "critical", "错误" ,QMessageBox::Ok, QMessageBox::Ok)) 
+	   { ... /* 判断用户按了 ok 按钮  */ }
+
+选择颜色对话框
+  QColor color =  QColorDialog::getColor(QColor(255,0,0)); //获得选择的颜色 rgb
+	qDebug() << "r = " <<  color.red()  << "g = " << color.green() << "b = " << color.blue();
+   
+
+文件选择对话框(父窗口, 窗口标题, 默认打开路径, 只选择图片文件后缀是.png .xpm .jpg文件, ) ;  
+	 只可以选择单个文件, getOpenFileNames 可以选择多个文件
+返回的是这个文件的 绝对路径和名称   /Users/Shared/a.txt
+  QString str =  QFileDialog::getOpenFileName(this, "打开文件", tr("/Users/Shared"), tr("*.txt"));
+  qDebug() << str;
+
+
+字体选择对话框 (是否选择成功, 默认字体和字号, 父窗口, 窗口标题);  返回选择的字体和字号 QFont 栈对象
+  bool flag = false;
+  QFont font =  QFontDialog::getFont(&flag, QFont("Hei", 22),this, "选择");
+  qDebug() << font.family().toUtf8().data() << " ,size = " << font.pointSize()
+            << ", 是否加粗" << font.bold() << ", 是否倾斜 " << font.italic()  
+            << "是否又下划线" << font.underline();
+			/* 输出 字体 和字号 */
+
+```
+
+
+
+
+
+
+
+## 界面布局
+
+- 使用 `Label` 标签 显示用户名和密码输入提示
+- 将按钮之类的控件聚集后单独的放入一个独立的 `Widget` 中可以更好的布局
+
+- 弹簧选择  `sizeTyep`  选项中, `Fixed` 可以将弹簧的值固定. 让控件之间的距离更好控制
+- 将窗口的最大与最小值都设置成相同的值,就可以达到固定窗口,不可缩放的目的. (`minimumSize` 与`macimumsSize`)
+- 用户输入框应该选择 `Line Edit` 控件. 密文输入的话选择属性中的  `echoMode = password`
+  - Linux下的密码输入会看不到, 所以应该选择 `echoMode = NoEcho`
+
+
+
+
+
+
+
+## 控件
+
+- `Tool Button`  工具按钮, 一般用来显示图片和说明.比 `Push Button` 要好用一些
+- `Radio Button` 是单选框, 以当前所在窗口为基础, 只能选择一个
+  - 可以使用控件 `Group Box` 来达到在一个窗口中 拥有多个单选框,并且相对独立的控件.
+  - `ui->QRadioButton对象指针->setChecked(true); //设置默认选择单选项`
+- `Check Box`  复选框. 也是以当前所在窗口为基础, 能同时选择多个. 与`Radio Button` 不会发生冲突
+- 
 
 
 
