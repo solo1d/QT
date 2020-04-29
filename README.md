@@ -19,7 +19,16 @@
 - [对话框](#对话框)
   - [标准对话框](#标准对话框)
 - [界面布局](#界面布局)
-- [控件](#控件)
+- [按钮控件](#按钮控件)
+- [基于模型-包括数据库的排列控件](#基于模型-包括数据库的排列控件)
+- [基于对象项目的排列控件](#基于对象项目的排列控件)
+- [其他的一些窗口控件](#其他的一些窗口控件)
+  - [可滚动区域窗口控件](#可滚动区域窗口控件)
+  - [分组窗口控件](#分组窗口控件)
+  - [网页标签类窗口控件](#网页标签类窗口控件)
+  - [分页标签类窗口控件](#分页标签类窗口控件)
+  - [下拉框-常用](#下拉框-常用)
+- [自定义封装控件](#自定义封装控件)
 - 
 
 
@@ -46,6 +55,14 @@
 >   - **一定程度上简化了内存回收机制**
 > - <u>**Qt中的坐标系:   x 左上角到右 ,  y 左上角到底部, 全部都是增加,没有负数.**</u>
 > - **`emit` 关键字可以触发信号和槽函数. `(emit MyClass::Myfun("123");)`**
+> - **Qt中的图片资源都叫做 `Pixmap`, 使用图片资源的函数都会携带这个关键字**
+> - **使用图片资源时, 必须在图片资源路径之前添加一个 `:` 来进行声明**
+>   - `QPixmap imagePath(":/sre/png/1.png");`
+>   - **`QLabel` 标签类还可以显示动图 .gif 格式的**
+>     - `QMovie* movie =  new QMovie (":/gif/gif/tea.gif"); //准备动图资源`
+>     - `ui->lbl_move->setMovie(movie); //让QLabel 标签显示动图`
+>     - `movie->start(); // 动图开始播放`
+> - **信号函数出现重载时,必须使用函数指针来进行指向**
 
 - **优点**
   - **跨平台.**
@@ -177,6 +194,8 @@ public:
 
 ## 信号和槽
 
+>  <u>**信号函数出现重载时,必须使用函数指针来进行指向**</u>
+
 - **`connect (信号发送者->按钮类, 发送的信号->按钮类的成员函数地址, 接受信号者->按钮所在窗口this, 处理的槽函数->依赖类中的槽函数地址也就是窗口槽函数地址)`**
   - `信号发送者`: 按钮
   - `发送的具体信号`: 点击之类的操作
@@ -196,7 +215,6 @@ public:
 - **接下来就需要关于槽`(帮助文档中是 public slots)`的函数,应该去按钮依赖的窗口类中去寻找槽方法.`(QWidget 窗口类)`**
   - `bool  close();`   关闭当前窗口 
   - `void hide();`  隐藏当前窗口
-  - 
   - **槽函数的图标类似于 皇冠,有三个尖角**
 
 > **`connect()` 可以链接两个毫不相关的信号和槽, 完全自由.**
@@ -206,6 +224,8 @@ public:
 > - **多个信号可以连接同一个槽**
 > - **信号和槽参数类型必须一一对应**
 > - **信号的参数个数可以多余和槽的参数个数, 但反过来不行**
+
+
 
 ```c++
 /* connect (信号发送者->按钮 类, 发送的信号->按钮类的成员函数地址, 接受信号者->按钮所在窗口this, 处理的槽函数->依赖类中的槽函数地址也就是窗口槽函数地址) */
@@ -786,7 +806,7 @@ int main(int argc, char *argv[])
 
 
 
-# 网络
+## 网络
 
 > `QUdpSocket, 和 QTcpSocket 以及 QTcpServer`
 
@@ -981,16 +1001,232 @@ QMessageBox 拥有静态公有成员函数, 通过返回值可以判断用户按
 
 
 
-## 控件
+## 按钮控件
 
 - `Tool Button`  工具按钮, 一般用来显示图片和说明.比 `Push Button` 要好用一些
-- `Radio Button` 是单选框, 以当前所在窗口为基础, 只能选择一个
+  - **`QToolButton` 工具按钮类, 用于显示图片和文字.**
+    - `toolButtonStyle`   突起风格 `autoRaise`
+- **`Radio Button` 是单选框, 以当前所在窗口为基础, 只能选择一个**
   - 可以使用控件 `Group Box` 来达到在一个窗口中 拥有多个单选框,并且相对独立的控件.
   - `ui->QRadioButton对象指针->setChecked(true); //设置默认选择单选项`
-- `Check Box`  复选框. 也是以当前所在窗口为基础, 能同时选择多个. 与`Radio Button` 不会发生冲突
-- 
+  - 开启 `autoRsize` 选项,可以达到 鼠标放在按钮时有个凸起的效果, 鼠标移开后,恢复与背景相同颜色.
+- **`Check Box`  复选框. 也是以当前所在窗口为基础, 能同时选择多个. 与`Radio Button` 不会发生冲突**
+  - 可以使用控件 `Group Box` 来达到在一个窗口中 拥有多个复选框,并且相对独立的控件.
+  - 使用信号和槽和组合 可以监听复选框的状态
+    - `connect(ui->boxOne, &QCheckBox::stateChanged, [=](int i){qDebug() << "check one = " << i ;}); // 多选框, 反馈 2 1 0 这三种内容`
+    - 开启 `QcheckBox` 中的 `tristate` 选项即可看到 1这个半选状态, 一般只会有0 和2.
+      - **2 选中, 1 半选, 0 未选择**
 
 
 
 
+
+## 基于模型-包括数据库的排列控件
+
+- 使用 `Item Views` 下的控件 `List view` ,  `Tree view`, `Table view`, `Column View`  来到达目的.里面可以排列从数据库返回的数据
+
+- 使用方式与下面 [基于项目排列控件](#基于项目排列控件) 相同
+
+
+
+
+
+## 基于对象项目的排列控件
+
+- 使用 `Item Widgets` 下的控件`List Widget` ,  `Tree Widget`, `Table Widget` 来实现. `QListWidget`
+- **`List Widget`  显示文本, 其中的数据每行都基于 `QListWidgetItem` 这个对象**
+- `Tree Widget`  以树形方式显示文本, 类似小箭头的下拉方式
+- `Table Widget`  表格方式显示
+
+```c++
+/* List Widget  控件*/
+/*  第一种创建数据并添加到控件中的方式 */
+    {
+        //创建一行数据, 准备放到 listWigetd 控件中
+        QListWidgetItem* item = new QListWidgetItem("显示的内容");
+        QListWidgetItem* item2 = new QListWidgetItem("显示的内容2");
+
+        //设置显示内容的格式. 居中, QListWidgetItem 对象
+        item->setTextAlignment(0x0004);
+
+        // listWigetd 控件中, 并且显示出来,  显示出来的内容可以被用户复制
+        ui->listWidget->addItem(item);
+        ui->listWidget->addItem(item2);
+    }
+/*  第二种创建数据并添加到控件中的方式, 方便但不可以设置字符显示格式 */
+    {
+      // 通过这个容器来进行添加,  也可以直接用字符串添加.
+        QStringList list;
+        list << "可以用拼接" << "的方式" << "来显示字符串"  << "但都是分行显示的,并不会显示在同一行";
+        ui->listWidget->addItems(list);
+    }
+```
+
+
+
+```c++
+/* TreeWidget 树控件的使用 */
+    {
+        //设置顶部表中的列, 创建了两个列,  英雄, 简介.
+        ui->treeWidget->setHeaderLabels(QStringList() << "英雄" <<  "简介");
+
+        // 创建一个节点(也是头,也是节点),  里面保存数据内容, 前面设置为头 , 注意 列 的数量
+        QTreeWidgetItem * liItem = new QTreeWidgetItem(QStringList() << "力量");
+        QTreeWidgetItem * mjItem = new QTreeWidgetItem(QStringList() << "敏捷");
+        QTreeWidgetItem * zlItem = new QTreeWidgetItem(QStringList() << "智力");
+
+        // 这个设置为节点,以 liItem 为头. 创建方式和头相同, 只不过使用方式不同罢了, 注意 列 的数量
+        QTreeWidgetItem *li1 = new QTreeWidgetItem(QStringList() << "德玛" << "很肉" );
+
+        // 添加 li1 节点到 liItem
+        liItem->addChild(li1);
+
+        // 将上面创建的树 添加到 treeWidget 表中, 并显示出来
+        ui->treeWidget->addTopLevelItem(liItem);  // 因为他拥有节点, 所以前面会有个三角,能折叠
+        ui->treeWidget->addTopLevelItem(mjItem);
+        ui->treeWidget->addTopLevelItem(zlItem);
+    }
+```
+
+```c++
+/* TableWidget 表格 */
+    {
+        // 先设置 列 的数量, 也就是 top 标签的数量, 跟任务管理的  | cup使用率 | 内存使用率 | ... 等等 的数量
+        ui->tableWidget->setColumnCount(3);
+
+        // 设置水平表头显示的名称, 就是顶部的标签名称
+        ui->tableWidget->setHorizontalHeaderLabels(QStringList() << "名称" << "性别" << "年龄" );
+
+        //设置行数
+        ui->tableWidget->setRowCount(5);
+
+        //添加数据, 每个数据都是 TableWidgetItem
+        ui->tableWidget->setItem(0,0, new QTableWidgetItem("0%"));
+
+        // 下面是两种可以插入的数据. (相同的)
+        QStringList nameList;
+        nameList << "10%" << "20%" << "30%" << "40%" << "50%" ;
+
+        QList<QString> sexList;
+        sexList << "男" << "男" << "男"  << "女" << "未知";
+
+
+        //用for 循环添加数据. j是列, i是行
+        for(int i =0 ; i <5 ; i++){
+            int j = 0;
+            ui->tableWidget->setItem(i,j++, new QTableWidgetItem(nameList[i]));
+            ui->tableWidget->setItem(i,j++, new QTableWidgetItem(sexList.at(i)));
+            ui->tableWidget->setItem(i,j++, new QTableWidgetItem(QString::number(i+18)));
+        }
+    }
+```
+
+
+
+
+
+## 其他的一些窗口控件
+
+### 可滚动区域窗口控件
+
+- 就是一个窗口控件, 里面控件或按钮之类的内容很多的话,会出现滚动条而已
+- `Scroll Area` 控件,  是 `QScrollArea` 类型
+
+
+
+### 分组窗口控件
+
+- 类似于 05年的QQ 界面, 好友,黑名单, 群 之类多个页面共用一个窗口位置, 可以反复替换和显示
+  - 里面的内容按照页来进行区分
+- `Tool Box` 控件
+  - 控件中的子控件 `Qwidget` 可以通过 `toolBox` 控件中的 `currentIndex` 来进行选择
+    - 然后在 `currentItemText` 来修改子标签显示的名称
+    - `currentItemName` 是子标签的 对象名
+
+
+
+### 网页标签类窗口控件
+
+- `Tab Widget` 控件,  和浏览器的窗口标签非常类似
+  - `currentIndex` 选择某个子标签
+  - `currentTabText`  子标签显示的名称
+  - `currentTabName` 子标签的对象名
+
+
+
+### 分页标签类窗口控件
+
+- `Stacked Widget` 控件, 与 网页标签类 相似.  需要一个按钮来控制页面间的转换
+
+```c++
+    //设置默认界面
+    ui->stackedWidget->setCurrentIndex(1);
+
+// 按钮来控制界面切换
+    connect(ui->btn_toolBox, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentIndex(0);
+    });
+
+    connect(ui->btn_scrollArea, &QPushButton::clicked, [=](){
+        ui->stackedWidget->setCurrentIndex(1);
+    });
+```
+
+
+
+### 下拉框-常用
+
+- `Combo Box` 带小三角的按钮, 会出现下拉选项. 使用代码可以在下拉框中添加内容
+
+```c++
+    {
+        ui->comboBox->addItem("a");
+        ui->comboBox->addItem("b");
+        ui->comboBox->addItem("c");
+        ui->comboBox->addItem("e");
+        ui->comboBox->addItem("d");
+
+        // 使用按钮来进行快速选择
+        connect(ui->btn_setC, &QPushButton::clicked, [=](){
+            // 使用索引进行选择
+//            ui->comboBox->setCurrentIndex(2);
+
+            //使用文本进行选择
+            ui->comboBox->setCurrentText("c");
+
+            // 使用按钮选择之后可能会出现无动作现象, 这个时候隐藏一下,再显示一下, 相当于刷新按钮了
+            ui->comboBox->hide();
+            ui->comboBox->show();
+        });
+    }
+```
+
+
+
+
+
+## 自定义封装控件
+
+- **添加Qt设计师界面类(ui)**
+  - 在新ui 界面添加 `QSlider` (Spin Box) 旋转框小部件  和 `QSpinBox` (horizontal Scroll Bar) 水平进度条滑块控件. 在这里面设计控件
+- 然后在主窗口 `Widget` 中使用自定义控件
+  - 添加一个 `Widget` 控件
+  - 选择 提升
+  - 添加 `Qt` 新界面的类名和头文件
+  - 选中后即可提升.为自定义控件
+- **自定义控件应该实现相对于的功能, 以及给主窗口调用的API接口.**
+
+```c++
+    //spinBox 是QSpinBox 控件,  horizontalSlider 是QSlider 控件,
+    // spinBox 数值改变时,进度条进行相对位置的移动 0-99  (可以修改成100)
+    connect(ui->spinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->horizontalSlider ,&QSlider::setValue);
+		
+{  /* 还可以这么写 */     
+  void (QSpinBox::*fun)(int) = &QSpinBox::valueChanged;
+	connect(ui->spinBox, fun , ui->horizontalSlider ,&QSlider::setValue);
+}
+
+  // 进度条进行位置的移动时, spinBox 数值改变
+    connect(ui->horizontalSlider, &QSlider::sliderMoved, ui->spinBox, &QSpinBox::setValue);
+```
 
