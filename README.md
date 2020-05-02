@@ -15,6 +15,7 @@
 - [菜单栏和工具栏](#菜单栏和工具栏)
 - [网络](#网络)
 - [QString转chat*](#QString转chat*)
+  - [QString格式化输入](#QString格式化输入)
 - [添加QT资源文件](#添加QT资源文件)
 - [对话框](#对话框)
   - [标准对话框](#标准对话框)
@@ -29,7 +30,9 @@
   - [分页标签类窗口控件](#分页标签类窗口控件)
   - [下拉框-常用](#下拉框-常用)
 - [自定义封装控件](#自定义封装控件)
-- 
+- [事件](#事件)
+  - [鼠标事件](#鼠标事件)
+  - 
 
 
 
@@ -62,6 +65,7 @@
 >     - `QMovie* movie =  new QMovie (":/gif/gif/tea.gif"); //准备动图资源`
 >     - `ui->lbl_move->setMovie(movie); //让QLabel 标签显示动图`
 >     - `movie->start(); // 动图开始播放`
+>   - **设置ui界面 `QFrame` 下的 `frameShape` 选项, 可以设置显示的格式和窗口格式**
 > - **信号函数出现重载时,必须使用函数指针来进行指向**
 
 - **优点**
@@ -823,6 +827,12 @@ QString s = "asdasd";  std::cout << s.toUtf8().data();
 
 
 
+### QString格式化输入
+
+- **可以输入数字和字符串, 数字会自动转换成字符串**
+
+`QString* str = new QString("变量 1= %1 , 变量2 = %2 ").arg(123, 345);`
+
 
 
 ## 添加QT资源文件
@@ -1229,4 +1239,117 @@ QMessageBox 拥有静态公有成员函数, 通过返回值可以判断用户按
   // 进度条进行位置的移动时, spinBox 数值改变
     connect(ui->horizontalSlider, &QSlider::sliderMoved, ui->spinBox, &QSpinBox::setValue);
 ```
+
+
+
+
+
+## 事件
+
+> **事件是  `QEvent` 类**
+
+### 鼠标事件
+
+> **鼠标进入窗口, 和离开窗口都会有事件触发.**
+>
+> **事件应该寻找 qt文档中 类说明的 `Reimplemented Protected Functions`或 `Reimplemented Public Functions` 内容,里面记录和可以重写的函数, 里面就有鼠标事件.**
+
+
+
+- **使用自定义类来进行事件函数的重载, 当事件发生时会自动触发事件函数**(添加override关键字, 重写)
+  - 鼠标进入窗口时的 `virtual`事件,  `void enterEvent(QEvent* event)override;`
+  - 鼠标离开窗口时的`virtual` 事件, `void leaveEvent(QEvent* event)override;`
+  - 鼠标在窗口内的移动会触发的信号 `void mouseMoveEvent(QMouseEvent *event)override;`
+
+- **自定义类和控件必须与想要捕捉鼠标的窗口 继承相同的类.**
+- **`QMouseEvent` 类包含描述鼠标事件的参数**
+
+
+
+```c++
+// 下面是一个标签类, 在ui中 提升一个Lable类变成下面这个类
+class MyLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    explicit MyLabel(QWidget *parent = nullptr);
+
+
+    //鼠标进入事件
+    void
+    enterEvent(QEvent* event) override;
+    //鼠标离开事件
+    void
+    leaveEvent(QEvent* event) override;
+
+    //鼠标按住点击 然后移动的鼠标事件
+    void
+    mouseMoveEvent(QMouseEvent *ev) override;
+
+    // 鼠标点击事件
+    void
+    mousePressEvent(QMouseEvent *ev) override;
+
+    // 鼠标点击后释放事件
+    void
+    mouseReleaseEvent(QMouseEvent *ev) override;
+};
+
+
+MyLabel::MyLabel(QWidget *parent) : QLabel(parent)
+{
+    //设置鼠标追踪, 只有鼠标出现在窗口内就会时时触发事件
+    // 设置后就不需要按键才会触发了
+    setMouseTracking(true);
+}
+
+//鼠标进入事件
+void MyLabel::enterEvent(QEvent *event){
+    qDebug() << "鼠标进入事件";
+}
+
+//鼠标离开事件
+void MyLabel::leaveEvent(QEvent* event){
+    qDebug() << "鼠标离开事件";
+}
+
+//鼠标按住点击 然后移动的鼠标事件
+// 设置鼠标跟踪后,就可以不需要按键即可触发该事件
+void
+MyLabel::mouseMoveEvent(QMouseEvent *ev){
+        QString str = QString("鼠标按住点击 然后移动的鼠标事件, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+        qDebug() << str;
+}
+
+// 鼠标点击事件
+void
+MyLabel::mousePressEvent(QMouseEvent *ev) {
+    if ( Qt::LeftButton &  ev->buttons() ){
+         QString str = QString("鼠标 左 点击事件 然后移动的鼠标事件, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+        qDebug() << str;
+    }
+
+    if ( Qt::RightButton &  ev->buttons() ){
+        QString str = QString("鼠标 右 点击事件 然后移动的鼠标事件, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+     qDebug() << str;
+    }
+
+    if( Qt::MidButton & ev->buttons()){
+        QString str = QString("鼠标 滚轮中键 点击事件 然后移动的鼠标事件, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+        qDebug() << str;
+    }
+}
+
+// 鼠标点击后释放事件
+void
+MyLabel::mouseReleaseEvent(QMouseEvent *ev){
+    QString str = QString("鼠标点击后释放事件 然后移动的鼠标事件, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+    qDebug() << str;
+}
+
+```
+
+
+
+
 
