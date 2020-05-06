@@ -32,7 +32,10 @@
 - [自定义封装控件](#自定义封装控件)
 - [事件](#事件)
   - [鼠标事件](#鼠标事件)
-  - 
+- [定时器](#定时器)
+  - [第一种方式-利用事件](#第一种方式-利用事件)
+  - [第二种方式-使用一个定时器类](#第二种方式-使用一个定时器类)
+- 
 
 
 
@@ -1248,6 +1251,15 @@ QMessageBox 拥有静态公有成员函数, 通过返回值可以判断用户按
 
 > **事件是  `QEvent` 类**
 
+- **APP通过 事件分发器(`bool event(QEvent* v);`) 来管理所有的事件, 返回true就代表 用户要处理这个事件, 不向下分发事件了.**
+  - APP捕获到设置好的事件触发动作, 交付给 事件分发器
+  - 事件分发器进行判断, 然后选择触发那些设定好的事件
+    - 事件分发器的动作是可以被拦截的
+
+  
+
+
+
 ### 鼠标事件
 
 > **鼠标进入窗口, 和离开窗口都会有事件触发.**
@@ -1347,6 +1359,102 @@ MyLabel::mouseReleaseEvent(QMouseEvent *ev){
     qDebug() << str;
 }
 
+```
+
+
+
+
+
+
+
+## 定时器
+
+> **类是 `TimerEvent`  , 方法是`Qtimer` 主题中的  `void QTimer::timerEvent(QTimerEvent* e);`**
+
+
+
+### 第一种方式-利用事件
+
+- 定时器重写 应该写在 `Widget` 类中
+
+- 定时器函数重写之后, 需要在构造函数内使用 `startTimer(10);` 启动定时器. 
+  - 参数是触发定时器函数的间隔, 毫秒单位.
+  - 返回值是计时器的唯一标识, 定时器可以存在多个
+
+```c++
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class Widget; }
+QT_END_NAMESPACE
+
+class Widget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    Widget(QWidget *parent = nullptr);
+    ~Widget();
+
+
+    //重写定时器事件
+    void timerEvent(QTimerEvent* e) override;
+
+private:
+    int num2 = 0;
+    int num1 = 0;
+    Ui::Widget *ui;
+};
+
+Widget::Widget(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::Widget)
+{
+    ui->setupUi(this);
+    // 启动定时器
+   num1 = startTimer(1000,Qt::PreciseTimer);     //参数: 间隔(毫秒)
+   num2 = startTimer(2000,Qt::PreciseTimer);     //参数: 间隔(毫秒)
+}
+
+
+// 重写定时器, e 会存储一个定时器标识符, 因为存在多个计时器, 可以通过e 来判断是哪个定时器触发的.
+void Widget::timerEvent(QTimerEvent* e){
+    static int _l_num = 1;
+    static int _l_num2 = 1;
+    if (e->timerId() == num1 ) {
+        ui->label_3->setNum(_l_num++);
+    }
+    if (e->timerId() == num2) {
+        ui->label_2->setNum(_l_num2++);
+    }
+}
+```
+
+
+
+### 第二种方式-使用一个定时器类
+
+- 使用这个比较方便
+
+```c++
+#include <QTimer>      // 定时器类
+
+Widget::Widget(QWidget *parent): QWidget(parent), ui(new Ui::Widget){
+    ui->setupUi(this);
+
+// 第二个定时器的方式
+    QTimer* timer = new QTimer(this);   //创建对象,并挂载到对象树上
+    timer->start(500);  // 间隔500毫秒, 就发出一个信号
+    connect(timer, &QTimer::timeout, [=](){
+        static int a = 0;
+        ui->label_4->setNum(a++);
+    });
+  
+  //还可以实现 计时器暂停, 重置, 加速, 修改 之类的各种功能
+    connect(ui->stopLable, &QPushButton::clicked,[=](){
+        timer->stop();
+        timer->start(1);
+    });
+}
 ```
 
 
