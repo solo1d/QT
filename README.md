@@ -32,9 +32,15 @@
 - [自定义封装控件](#自定义封装控件)
 - [事件](#事件)
   - [鼠标事件](#鼠标事件)
+  - [事件拦截](#事件拦截)
+  - [事件过滤器](#事件过滤器)
+  - [绘图事件](#绘图事件)
+    - [绘图设备](#绘图设备)
 - [定时器](#定时器)
   - [第一种方式-利用事件](#第一种方式-利用事件)
   - [第二种方式-使用一个定时器类](#第二种方式-使用一个定时器类)
+- [文件读写操作](#文件读写操作)
+- [为MacOS应用设置图标](#为MacOS应用设置图标)
 - 
 
 
@@ -954,7 +960,7 @@ MainWindow::~MainWindow()
 
 - **标注对话框就是 Qt内置的一系列对话框, 包括:**
   - `QColorDialog`  选择颜色 (非模态), 头文件`<QColorDialog>`
-  - `QFileDialog`  选择文件或目录(非模态),头文件 `<QFileDialog>`
+  - **`QFileDialog`  选择文件或目录(非模态),头文件 `<QFileDialog>`**
   - `QFontDialog`  选择字体(非模态)
   - **`QInputDialog`   允许用户输入一个值, 并将其值返回(非模态)**
   - **`QMessageBox` 消息对话框,用于显示信息, 询问问题等(模态).**
@@ -1252,10 +1258,11 @@ QMessageBox 拥有静态公有成员函数, 通过返回值可以判断用户按
 > **事件是  `QEvent` 类**
 
 - **APP通过 事件分发器(`bool event(QEvent* v);`) 来管理所有的事件, 返回true就代表 用户要处理这个事件, 不向下分发事件了.**
-  - APP捕获到设置好的事件触发动作, 交付给 事件分发器
+  - **APP捕获到设置好的事件触发动作, 交付给 事件分发器**
+    - **交付给 事件分发器直前, 会先通过事件过滤器,做一次高级拦截**
   - 事件分发器进行判断, 然后选择触发那些设定好的事件
-    - 事件分发器的动作是可以被拦截的
-
+  - 事件分发器的动作是可以被拦截的
+  
   
 
 
@@ -1363,6 +1370,281 @@ MyLabel::mouseReleaseEvent(QMouseEvent *ev){
 
 
 
+### 事件拦截
+
+```c++
+
+class MyLabel : public QLabel{
+public:
+  // 通过 event事件分发器  拦截 鼠标按下事件
+bool event(QEvent *e) override;
+};
+
+bool
+MyLabel::event(QEvent *e){
+    if (e->type() & QEvent::MouseButtonPress){
+        qDebug() <<"拦截 鼠标左键单击 事件拦截";
+
+        return true;  // 这个返回值代表, 用户自己处理这个事件, 不向下分发了
+    }
+    //拦截某个事件之后, 就给 这类继承的父类来处理 MyLabel: public Qlabel
+    return QLabel::event(e);
+
+}
+```
+
+
+
+### 事件过滤器
+
+- 使用步骤
+  - 给控件安装事件过滤器 `ui->label->installEventFilter(this);`
+  - 重写 `bool QObject::eventFilter(QObject *watched, QEvent *event);` 事件
+  - 
+
+```c++
+
+class Widget : public QWidget{
+public:
+  Wideget();
+	bool  eventFilter(QObject *watched, QEvent *event) override;
+private:
+  Ui::Widget *ui;
+}
+
+Widget::Widget(){
+  // label 是ui界面中的一个标签, 拥有鼠标处理事件. 是 提升 到一个自定义类的标签
+  //给 label1 安装事件过滤器, 因为标签存在于该窗口上, 所以直接给 widget类, 必须先开启
+	ui->label->installEventFilter(this);
+}
+
+
+
+bool
+Widget::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == ui->label){   //判断事件是给谁的,也就是拦截谁
+        if (event->type() & QEvent::MouseButtonPress){  // 要拦截的事件.
+            QMouseEvent* ev = static_cast<QMouseEvent*>(event);
+            QString str = QString("-----过滤器拦截 鼠标左键单击 事件拦截, x = %1 ,y = %2 ").arg(ev->x(), ev->y());
+            qDebug() << str;
+
+            return true;  // 这个返回值代表, 用户自己处理这个事件, 不向下分发了,不会进入事件分发器了
+        }
+    }
+    return  QWidget::eventFilter(this, event);// 交还给父类
+}
+
+```
+
+
+
+
+
+### 绘图事件
+
+> `QPainter` 绘图类, 应该包含这个头文件 `<QPainter>`
+
+- 在 `Widget`中,重写绘画事件  `void paintEvent(QPaintEvent *event) override;`
+
+```c++
+#include <QPainter>
+
+class Widget : public QWidget{
+  public:
+// 重写绘图事件
+	  Widget(QWidget *parent);
+    void paintEvent(QPaintEvent *event) override;
+}
+
+Widget::Widget(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::Widget)
+{
+    ui->setupUi(this);
+
+        // 点击按钮 pushMove , 移动画家类 画出的图片
+//    connect(ui->pushMove, &QPushButton::clicked, [=](){
+//         // 如果手动调用绘图事件, 用 update 来更新
+//        posX+=20;
+//        update();
+//    });
+
+    // 计时器自动移动图片
+    QTimer* timer = new QTimer(this);   //创建对象,并挂载到对象树上
+    timer->start(10);  // 间隔10毫秒, 就发出一个信号
+    connect(timer, &QTimer::timeout, [=](){
+        update();
+    });
+}
+
+// 重写并自定义 绘图事件
+void
+Widget::paintEvent(QPaintEvent *event){
+    // 实例化一个画家 对象, 在 this 这个窗口进行绘画
+    QPainter painter(this);
+
+    {
+        // 设置画笔颜色, 也就是线的颜色
+        QPen pen(QColor(123,46,124));
+
+        // 设置画笔宽度, 文字不受画笔宽度影响
+        pen.setWidth(5);
+
+        // 设置画笔风格, 默认是实线, 可以修改成虚线之类的, 文字不受风格影响
+        pen.setStyle(Qt::DashDotLine);
+
+
+        // 设置 画刷 来填充 闭合图形的颜色
+        QBrush brush(Qt::cyan);
+
+        //设置 画刷 风格
+        brush.setStyle(Qt::HorPattern);
+
+        // 设置画家对象, 修改画笔, 以及画刷
+        painter.setPen(pen);
+        painter.setBrush(brush);
+    }
+
+    // 画一条线, 两个点进行连接 画一条线
+    painter.drawLine(0,0,100,100);
+    painter.drawLine(QPointF(10,10),QPointF(20,80));
+
+    // 画一个圆圈, 使用椭圆函数进行圆的绘制, (位置(x,y),x宽度,y宽度);
+    painter.drawEllipse(QPointF(200,100),40,40);
+
+
+    // 画矩形 (x,y, 长度, 高度)
+    painter.drawRect(300, 400,40,80);
+
+    // 写文字 , 文字不受画笔宽度影响, 不受风格影响
+    painter.drawText(QPointF(400,400),"asdasda");
+    painter.drawText(QPointF(400,200),"400,400",19,1); // (位置, 文字, 字号, 字间隙);
+    painter.drawText(QRect(0,300,500,200),"2000,3242");  // (QRect(左边,顶部,下部,右边), 文字);
+  
+///////////////////// 高级设置   /////////////////////////
+      QPainter painter(this);
+    {
+        painter.drawEllipse(QPointF(100,50),50,50);
+        // 开启抗锯齿
+        painter.setRenderHint(QPainter::HighQualityAntialiasing,true);
+        painter.drawEllipse(QPointF(200,50),50,50);
+    }
+      {
+          painter.drawRect(QRect(20,20,50,50));
+          // 保存画家状态
+          painter.save();
+
+          // 移动画笔的原点
+          painter.translate(100,0);
+          painter.drawRect(QRect(20,20,50,50));
+
+          // 恢复画家状态.
+          painter.restore();
+          painter.drawRect(QRect(10,10,70,70));
+      }
+        {
+
+        //判断图片是否会超出屏幕,如果超出就重置回来, 屏幕宽度是 width() , 高度是/
+         posX += 10;
+         if (this->width() <= posX){
+            posX = 0;
+         }
+
+        // 利用画家类 来直接加载资源图片. (位置, 资源文件);
+        //painter.drawImage(QPointF(0,0),QImage(":/1.jpg"));
+        painter.drawPixmap(posX,0,QPixmap(":/1.jpg"));   // 效果相同,  还可以限制图的长度和宽度
+      }
+}
+```
+
+
+
+### 绘图设备
+
+> **使用绘图设备要先包涵 `<QPixmap>` 头文件**
+>
+>  继承了 `QPaintDevice` 的类,基本上都是绘图设备, 能在上面直接画画
+
+- 绘图设备是指 继承 `QPainterDevice` 的子类, Qt提供了四个这样的类
+  - **`QPixmap`  专门在图像在屏幕上显示做了优化**
+  - **`QBitmap` 是 `QPixmap` 的一个字咧, 色深限定为1(只有黑白) , 可以使用 `QPixmap` 的 `isQBitmap()` 函数来确定这个 `QPixmap` 是不是一个 `QBitmap`**
+  - **`QImage` 专门为图像 像素级访问做了优化**
+  - **`QPicture` 可以记录和重现 `QPainter` 的各条命令**
+
+```c++
+#include "widget.h"
+#include "ui_widget.h"
+#include <QPixmap>     // 绘画设备类
+#include <QPainter>    // 画家类
+#include <QPicture>    // 记录和重建
+Widget::Widget(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::Widget)
+{
+    ui->setupUi(this);
+
+//    {
+//        //QPixmap 绘图设别
+//        QPixmap pix(300,300); // 创建一个可以画画的纸,设定纸的宽度和高度
+//        pix.fill(QColor(255,255,255));     // 设置纸的颜色
+//        QPainter painter(&pix);    // 在 pix 这张纸上绘画
+//        painter.setPen(QColor(0,255,0));    // 设置颜色
+//        painter.drawEllipse(QPointF(150,150),100,100);      // 绘画一个圆
+//        pix = pix.scaled(pix.width() *0.41, pix.height() * 0.41);     // 将载入的图片进行缩放, 需要pix 来接受,进行刷新
+//        pix.save("/Users/ns/Downloads/pix.png");    // 将绘画出来的图片保存到文件中.
+//     }
+
+//    {
+//        // QImage 绘图设备, 可以对像素点 进行访问
+//        QImage image(300,300,QImage::Format_RGB32);   // 300宽度,300高度,显示格式也就是颜色RGB
+//        image.fill(Qt::white);     // 设置纸的颜色
+//        QPainter painter(&image);    // 在 pix 这张纸上绘画
+//        painter.setPen(Qt::blue);    // 设置颜色
+//        painter.drawEllipse(QPointF(150,150),100,100);      // 绘画一个圆
+//        image.save("/Users/ns/Downloads/image.png");    // 将绘画出来的图片保存到文件中.
+//    }
+
+    {
+        // QPicture 绘图设备, 可以记录和重建绘图的指令, 继承了 QPaintDevice 类
+        QPicture pic;
+        QPainter painter;
+        painter.begin(&pic);   // 指定绘图设备 , 并开始在 pic 绘图设备上绘画, 下面的步骤都会记录起来, 需要结束标志, end
+        painter.setPen(Qt::red);   // 红色
+        painter.drawEllipse(QPointF(150,150),100,100);      // 绘画一个圆
+        painter.end();       // 绘画完毕, 记录完成
+
+        pic.save("/Users/ns/Downloads/pic.png");// 将绘画的动作 保存到磁盘, 等待读取和使用
+    }
+}
+
+// 绘图事件
+void
+Widget::paintEvent(QPaintEvent *event){
+     // 就算是修改,也是使用画家类是进行
+//     QPainter painter(this);
+
+//    // 利用 QImage 对像素进行修改
+//    QImage img;
+//    img.load(":/image/ferry.jpg");  // 载入一张图片
+//    for(int i =50; i< 100 ; i++){
+//        for (int j =50; j < 100 ; j++){
+//            img.setPixelColor(i,j,Qt::red);  //将 50*50 大小的矩形 ,在位置 50*50 和 100*100 地方显示 出一个红色的矩形框
+//        }
+//    }
+//    painter.drawImage(0,0,img);  // 在 this主窗口中显示出来
+
+    //重现 QPicture 绘图指令
+    QPainter painter(this);
+    QPicture pic;
+    pic.load("/Users/ns/Downloads/pic.png");    // 读取绘画动作
+    painter.drawPicture(0,0,pic);   // 在 this 窗口显示出来.
+}
+```
+
+
+
+
+
 
 
 
@@ -1460,4 +1742,133 @@ Widget::Widget(QWidget *parent): QWidget(parent), ui(new Ui::Widget){
 
 
 
+
+## 文件读写操作
+
+```c++
+#include <QFileDialog>   //标准窗口, 文件选择对话框
+#include <QFile>    //对文件进行读写操作.
+#include <QDebug>
+#include <QDateTime>   // 文件日期事件类
+#include <QTextCodec>  //编码格式类
+
+Widget::Widget(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::Widget)
+{
+    ui->setupUi(this);
+
+
+    {
+        // 点击 选取文件按钮, 弹出文件对话框. pushButton
+        connect(ui->pushButton, &QPushButton::clicked,[=](){
+            // 读文件和显示的操作
+            {
+                QString str =  QFileDialog::getOpenFileName(this, "打开文件", tr("/Users/ns/Downloads"), tr("*"));  // 点击按钮后,弹出选择文件对话框
+
+                if(str.isEmpty()) // 健壮性, 用户选择的取消打开文件,那么就不执行下面的内容
+                    return;
+
+                ui->lineEdit->setText(str);   // 选择文件后, 将文件的绝对路径+文件名写到 lineEdit 这个控件内
+
+                //编码格式类, 扩充支持的文件编码格式, 也就是将读到的数据转换成 gbk 格式进行输出.
+                QTextCodec * codec = QTextCodec::codecForName("gbk");
+
+                //读取文件内容, 放到 textEdit 中显示
+                // QFile 默认支持的格式是 UTF-8
+                QFile file(str);     // 读取文件的路径
+                file.open(QIODevice::ReadOnly);    //设置 只读方式 打开文件
+
+                QByteArray  array;    //存放 从文件读到的数据
+                {
+                    // array = file.readAll();    // 读取文件中的所有数据 并放到 QByteArray 这个类中. 读大文件会假卡死
+                    while( !file.atEnd() ) // 如果已到达文件末尾，则返回true
+                        array.push_back( file.readLine());  //追加式读取文件内容并放到 存储数据的结构内
+
+                }
+
+                ui->textEdit->setText(array);    // 将读取到的数据输出到   textEdit 控件内显示, 默认输出 utf8格式
+                {
+                    // ui->textEdit->setText(codec->toUnicode(array));    // 将读到的数据转换成 gbk 格式, 并进行输出
+                }
+                qDebug() <<array.size();     // 查看一下 该文件内 的字节数
+
+                file.close();    //关闭已打开的文件
+
+
+            // 写文件的操作
+                {
+                    file.open ( QIODevice::Append );    // 追加的方式来写, 要不然会清除文件内原有的内容
+                    file.write("啊啊啊啊啊啊\n");
+                    file.close();
+                }
+                              // QFileInfo 文件信息类
+                {
+                    QFileInfo fileInfo(file);
+                    qDebug()  << "文件大小:" <<fileInfo.size()     /* 文件大小 */
+                              << ", 后缀名:"<< fileInfo.suffix();    // 获得文件后缀名
+                    QDateTime dateTime =  fileInfo.created();       // 获得文件的创建日期
+                    qDebug() << "文件创建日期:" <<dateTime.toString("yyyy-MM-dd.hh:mm:ss");   // 格式 2020-10-10
+                    dateTime = fileInfo.lastModified();     //获得文件最后修改日期
+                    qDebug() << "文件最后的修改日期:" <<dateTime.toString("yyyy-MM-dd.hh:mm:ss");   // 格式 2020-10-10
+                    dateTime = fileInfo.lastRead();        // 获得文件最后读取日期
+                    qDebug() << "文件最后读取日期:" <<dateTime.toString("yyyy-MM-dd.hh:mm:ss");   // 格式 2020-10-10
+                }
+
+            }
+        });
+    }
+}
+```
+
+
+
+## 为MacOS应用设置图标
+
+- **制作图标文件**
+  - 需要的原始图片文件必须为 `.png` 格式
+  - 使用命令行来制作图标
+
+```bash
+# 将准备好的  pic.png 文件放到当前目录
+# 创建icons.iconset目录（这里在当前用户的桌面创建），用来放置不同尺寸的图标
+$ mkdir icons.iconset       # 目前这里还是空目录
+
+# 使用命令来生成不同尺寸的图片, 后面的文件名必须一一对应
+$sips -z 16 16     pic.png --out icons.iconset/icon_16x16.png
+
+$sips -z 32 32     pic.png --out icons.iconset/icon_16x16@2x.png
+
+$sips -z 32 32     pic.png --out icons.iconset/icon_32x32.png
+
+$sips -z 64 64     pic.png --out icons.iconset/icon_32x32@2x.png
+
+$sips -z 64 64     pic.png --out icons.iconset/icon_64x64.png
+
+$sips -z 128 128   pic.png --out icons.iconset/icon_64x64@2x.png
+
+$sips -z 128 128   pic.png --out icons.iconset/icon_128x128.png
+
+$sips -z 256 256   pic.png --out icons.iconset/icon_128x128@2x.png
+
+$sips -z 256 256   pic.png --out icons.iconset/icon_256x256.png
+
+$sips -z 512 512   pic.png --out icons.iconset/icon_256x256@2x.png
+
+$sips -z 512 512   pic.png --out icons.iconset/icon_512x512.png
+
+$sips -z 1024 1024   pic.png --out icons.iconset/icon_512x512@2x.png
+
+
+# 生成图标,  -c 目录  -o 生成出来的图标文件
+$ iconutil -c icns icons.iconset -o Icon.icns
+```
+
+- 将 得到的图标文件设置到 qt 中
+  - **将上面生成的Icon.icns复制到项目的根目录下**
+  - **在项目资源内添加该图标文件**
+  - **在 .pro 项目文件中添加如下内容即可**
+    - `ICON = Icon.icns`
+      - 这个方法只适合于 `qmake`  的构建方式
+        - 其他的在帮助文档中查找 `Setting the Application Icon` 来进行确定
 
