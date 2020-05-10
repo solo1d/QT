@@ -12,6 +12,7 @@
   - [1信号连接槽函数,2信号再连接1信号](#1信号连接槽函数,2信号再连接1信号)
   - [断开信号和槽的连接](#断开信号和槽的连接)
 - [按钮和窗口标题以及窗口固定大小](#按钮和窗口标题以及窗口固定大小)
+  - [设置窗口默认出现在屏幕的位置](#设置窗口默认出现在屏幕的位置)
 - [菜单栏和工具栏](#菜单栏和工具栏)
 - [网络](#网络)
 - [QString转chat*](#QString转chat*)
@@ -39,8 +40,12 @@
 - [定时器](#定时器)
   - [第一种方式-利用事件](#第一种方式-利用事件)
   - [第二种方式-使用一个定时器类](#第二种方式-使用一个定时器类)
+- [延时执行方法](#延时执行方法)
 - [文件读写操作](#文件读写操作)
 - [为MacOS应用设置图标](#为MacOS应用设置图标)
+- [弹跳特效](#弹跳特效)
+- [音效](#音效)
+- [Qt程序的打包](#Qt程序的打包)
 - 
 
 
@@ -88,6 +93,9 @@
 
 ## 头文件说明
 
+- 如果头文件无法添加, 那么寻找Qt帮助文档中 `qmake: QT += xxxx ` 这样的字样, 然后添加到 .pro 文件中.
+  - `QSound Class` 就是这样的.  需要添加 `QT += multimedia` 到 .pro文件
+
 ```c++
 <QApplication>  包含一个应用程序类的头文件 
 <QWidget>       窗口类
@@ -103,6 +111,7 @@
 <QColorDialog>  选择颜色对话框
 <QFileDialog>   文件选择对话框
 <QDebug>        调试信息,可以输出一些调试内容和文本,   qDebug() << "内容";
+<QSound>        音效支持文件, 需要 QT += multimedia 添加到 .pro 文件内
 ```
 
 
@@ -623,6 +632,7 @@ myWidget::myWidget(QWidget *parent)
         setFixedSize(400,500);   //400宽度, 500长度
     }
 
+      btn2->setStyleSheet("QPushButton{border:0px;}");   /// 设置不规则图片的样式, 将图片的边框像素点占用设置为0
 }
 
 myWidget::~myWidget()
@@ -638,6 +648,20 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 ```
+
+
+
+
+
+## 设置窗口默认出现在屏幕的位置
+
+```c++
+就是两个窗口类 中的两个方法.
+
+chooseScene->setGeometry(this->geometry()); // 变成上个窗口在屏幕的位置出现
+```
+
+
 
 
 
@@ -718,7 +742,7 @@ MainWindow::MainWindow(QWidget *parent)
     // 点击菜单栏中的文件,就会在文件下面弹出二级页面,里面就会出现新建
     // 存在多个时,会按照顺序创建
     // QAction* 返回值是给工具栏使用的, 可以让工具栏拥有和这个 菜单选项相同的功能
-    QAction* newAction =  fileMenu->addAction("新建");
+    QAction* newAction =  fileMenu->addAction("新建");   // 创建一个菜单项
     fileMenu->addSeparator();  //分隔符,分割二级页面中相邻的两项,可以更直观的看到内容
     QAction* openAction = fileMenu->addAction("打开");
     editMenu->addAction("全选");
@@ -772,7 +796,24 @@ MainWindow::MainWindow(QWidget *parent)
 
     //创建一个 标签控件
     QLabel* label = new QLabel("提示信息",this);
+     
+     // 让标签内的 文字显示为红色
+     label->setStyleSheet("color:red;");
+     
+     // 修改标签显示文字的  字体
+    QFont font;
+    font.setFamily("华文新魏");   // 字体
+    font.setPointSize(20);      // 字号
+    font.setBold(true);        // 设置 字体加粗
+      
+    str = QString("Level : %1").arg(this->levelIndex); // 准备放入label中的内容
 
+    label->setParent(this);
+    label->setText(str);
+    label->setGeometry(30, this->height() -50, 120,50);   // 设置标签位置和大小
+    label->setFont(font);    // 设置显示的字体
+      
+      
     //将标签放入状态栏中, 默认从左到右
     stBar->addWidget(label);
 
@@ -1743,6 +1784,20 @@ Widget::Widget(QWidget *parent): QWidget(parent), ui(new Ui::Widget){
 
 
 
+## 延时执行方法
+
+```c++
+#include <QTimer>
+
+QTimer::singleShot(300,[=](){
+	 // 这里面的内容会延迟 300 毫秒之后才会执行
+});
+```
+
+
+
+
+
 ## 文件读写操作
 
 ```c++
@@ -1872,3 +1927,98 @@ $ iconutil -c icns icons.iconset -o Icon.icns
       - 这个方法只适合于 `qmake`  的构建方式
         - 其他的在帮助文档中查找 `Setting the Application Icon` 来进行确定
 
+
+
+
+
+## 弹跳特效
+
+```c++
+#include <QPropertyAnimation>
+
+// 创建动画对象, (设置动画的窗口控件, 动画模式 );
+QPropertyAnimation* animation = new QPropertyAnimation(this,"geometry");
+
+// 设置动画时间 间隔, 也就是 动画会在200毫秒内执行完毕
+animation->setDuration(200);
+
+//起始位置 (左, 顶部, 下部, 右), 其实就是当前的位置, 
+animation->setStartValue(QRect(this->x(),this->y(),this->width(),this->height()));
+
+//结束位置
+animation->setEndValue(QRect(this->x(),this->y() +10 ,this->width(),this->height()));
+
+//设置弹跳曲线, 也就是动画效果
+animation->setEasingCurve(QEasingCurve::OutBounce);
+
+// 开始特效执行
+animation->start();
+
+
+
+//////// 另一种
+// 通关标签和动画效果
+QPixmap pixWin;
+pixWin.load(":/png/4.png");
+pixWin = pixWin.scaled(80,60);
+QLabel* winBel = new QLabel(this);
+winBel->setPixmap(pixWin);
+winBel->setGeometry(0,0,pixWin.width(), pixWin.height());  // 设置大小和初始化位置,
+winBel->move(this->width()/2 - pixWin.width()/2, -pixWin.height());
+winBel->setParent(this);
+
+//动画效果
+QPropertyAnimation* animation = new QPropertyAnimation(winBel, "geometry");
+// 设置动画时间 间隔, 也就是 动画会在200毫秒内执行完毕
+animation->setDuration(200);
+//起始位置 (左, 顶部, 下部, 右), 其实就是当前的位置,  毕竟 winBel 已经移动好了位置了
+animation->setStartValue(QRect(winBel->x(),winBel->y(),winBel->width(),winBel->height()));
+//结束位置
+animation->setEndValue(QRect(winBel->x(),winBel->y() +150,winBel->width(),winBel->height()));
+//设置弹跳曲线, 也就是动画效果
+animation->setEasingCurve(QEasingCurve::OutBounce);
+// 将胜利的图片 弹跳下来
+animation->start();
+```
+
+
+
+
+
+## 音效
+
+> 需要头文件 `<QSound>`
+
+- 只可以使用 `wav`  文件. 不支持mp3.  需要转码.
+
+```c++
+
+QSound* backSound = new QSound(":/sound/backSound.wav",this);
+
+backSound->paly();    //开始播放音效
+
+backSound->stop();   // 停止音效
+
+backSound->setLoops(5);   // 循环播放该音效 5 次
+backSound->setLoops(QSound :: Infinite);   // 无限循环这个音效, 只是把5 改成了 -1, 但有时无效
+```
+
+
+
+
+
+## Qt程序的打包
+
+- Windows下
+  - 将已经写好的 Qt 项目, 在 `release`  模式下生成一个 .exe 文件.
+  - 将这一个文件拷贝出来,随便放到一个地方, 假设绝对路径是 `D:\\dir\a.exe`
+  - 来到 Qt 安装目录  `Qt/Qt5.2.1/mingw49_32/bin`
+  - 在这个目录内找到 `windeployqt.exe` 执行文件
+  - 使用 `cmd`  来进行运行和参数的添加,(在当前目录按住 Ctrl 再点击鼠标右键, 就会有一个 在此处打开cmd 的选项)
+    - 后面是输入到cmd的内容: `windeployqt D:\\dir\a.exe `
+    - 随后就会生成一大堆文件和动态库在 `D:\\dir` 目录内. 
+      - 这里面所有的文件都是运行所必须的内容, 可以直接发布给别人使用了.
+      - 打包完成
+
+- MAC 无需担心直接使用
+- 
