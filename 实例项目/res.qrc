@@ -1,0 +1,33 @@
+<RCC>
+    <qresource prefix="/">
+        <file>game/0.png</file>
+        <file>game/1.png</file>
+        <file>game/2.png</file>
+        <file>game/3.png</file>
+        <file>game/succeed.jpg</file>
+        <file>icon/Icon.icns</file>
+        <file>png/1.png</file>
+        <file>png/2.png</file>
+        <file>png/3.png</file>
+        <file>png/4.png</file>
+        <file>png/5.png</file>
+        <file>png/6.png</file>
+        <file>png/7.png</file>
+        <file>png/8.png</file>
+        <file>png/9.png</file>
+        <file>png/10.png</file>
+        <file>png/11.png</file>
+        <file>png/12.png</file>
+        <file>png/13.png</file>
+        <file>png/back.jpg</file>
+        <file>png/3_60x60.png</file>
+        <file>png/5_60x60.png</file>
+        <file>png/icon_32x32.png</file>
+        <file>png/icon_64x64.png</file>
+        <file>sound/backSound.wav</file>
+        <file>sound/clearanceSound.wav</file>
+        <file>sound/failureSound.wav</file>
+        <file>sound/selectTouchSound.wav</file>
+        <file>sound/startTouchSound.wav</file>
+    </qresource>
+</RCC>
