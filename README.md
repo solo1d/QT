@@ -1,6 +1,15 @@
+**Qt6版本**
+
 ## 目录
 
 - [QT笔记](#QT笔记)
+- [QT中文编码解决方案](#QT中文编码解决方案)
+  - [创建一个最简单的项目并使用命令行来进行编译](#创建一个最简单的项目并使用命令行来进行编译)
+    - [1建立工程目录](#1建立工程目录)
+    - [2创建main文件](#2创建main文件)
+    - [3使用qmake创建项目pro文件](#3使用qmake创建项目pro文件)
+    - [4根据目前的文件生成Makfile文件](#4根据目前的文件生成Makfile文件)
+    - [5完成项目的编译make](#5完成项目的编译make)
 - [头文件说明](#头文件说明)
 - [工程文件说明](#工程文件说明)
 - [详细类对象说明](#详细类对象说明)
@@ -46,7 +55,7 @@
 - [弹跳特效](#弹跳特效)
 - [音效](#音效)
 - [Qt程序的打包](#Qt程序的打包)
-- 
+- [工具链](#工具链)
 
 
 
@@ -73,7 +82,7 @@
 > - <u>**Qt中的坐标系:   x 左上角到右 ,  y 左上角到底部, 全部都是增加,没有负数.**</u>
 > - **`emit` 关键字可以触发信号和槽函数. `(emit MyClass::Myfun("123");)`**
 > - **Qt中的图片资源都叫做 `Pixmap`, 使用图片资源的函数都会携带这个关键字**
-> - **使用图片资源时, 必须在图片资源路径之前添加一个 `:` 来进行声明**
+> - **使用图片资源时, 必须在图片资源路径之前添加一个 `:` 冒号 来进行声明**
 >   - `QPixmap imagePath(":/sre/png/1.png");`
 >   - **`QLabel` 标签类还可以显示动图 .gif 格式的**
 >     - `QMovie* movie =  new QMovie (":/gif/gif/tea.gif"); //准备动图资源`
@@ -88,6 +97,101 @@
   - **一定程度上简化了内存回收**
 
 - **显示中文时, 一定要设置UTF-8来进行输出**
+
+
+
+## QT中文编码解决方案
+
+```cpp
+统一字符编码 Unicode   , 根据字长不同 分为 UCS-2   UCS-4
+  UCS-2 和 UCS-4根据转换算法的不同 可分为 UTF-8   UTF16   UTF32 
+     QT默认使用 UTF-16  , 而文件默认是 UTF-8  
+        系统会自动转换 UTF8 到 UTF16 ,  但是其他的编码需要转换
+
+        
+通过 QTextCodec 实现编码转换, 将 GBK转换成 UTF16
+  // 将  QT += core5compat  添加到 .pro 文件内 
+  #include <QTextCodec>
+  QTextCodec *codec = QTextCodec::codecForName("GBK");  // 将下面的GBK编码字符串转换成UTF16
+  QString     string =  codec->toUnicode("GBK编码的中文字符串");   // 将字符串转换成 UTF16
+```
+
+
+
+# 创建一个最简单的项目并使用命令行来进行编译
+
+- Qt程序构建过程
+  - 构建工程   `qmake -project` , 向生成出来的.pro 文件添加 `QT += widgets`
+  - 创建 Makefile     `qmake`
+  - 编译连接   `make`
+  - 测试    `./项目.app`
+
+## 1建立工程目录
+
+```bash
+$ mkdir     ~/qtProject    #这里面存放Qt的所有代码
+$ touch main.cpp
+```
+
+## 2创建main文件
+
+```cpp
+// 当前文件编码为  UTF8
+#include <QApplication>
+#include <QLabel>
+#include <QTextCodec>
+int main(int argc, char* argv[]){
+   // 创建 Qt 应用程序对象, 必须第一个存在
+    QApplication app(argc, argv);
+  
+	  QTexxtCodec *codec = QTextCodec::codecForName("UTF8");
+  // 创建标签控件
+    QLabel  label( codec->toUnicode("hello Qt!"));
+  // 显示标签控件
+    label.show();
+  // 让应用程序进入事件, 这样才能保持窗口一直存在
+    return app.exec();
+}
+```
+
+## 3使用qmake创建项目pro文件
+
+```bash
+$  qmake -project     # 创建 qtProject.pro  文件, 这个文件名与当前的文件夹名称相同
+#  qtProject.pro 文件 内容如下
+
+QT += Widgets  core5compat   #这句话是手动加上的,代表用到 Widgets 模块
+
+TEMPLATE = app   #当前文件时可执行的文件
+TARGET = qt_terminal   #可执行程序的目标文件名, 与当前工程名保持一致
+INCLUDEPATH += .       # 项目用到的头文件
+#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.
+
+# Input    源文件
+SOURCES += main.cpp
+```
+
+
+
+## 4根据目前的文件生成Makfile文件
+
+```bash
+$ qmake  #执行当前命令就会生成 Makefile 文件
+```
+
+
+
+## 5完成项目的编译make
+
+```bash
+$ make  
+# 当前目录下就会生成如下内容 , 当修改 .cpp 源代码时,  需要重新使用 make 来重新编译
+Makefile        main.cpp        main.o          qt_terminal.app    qt_terminal.pro
+```
+
+
+
+
 
 
 
@@ -2021,4 +2125,18 @@ backSound->setLoops(QSound :: Infinite);   // 无限循环这个音效, 只是�
       - 打包完成
 
 - MAC 无需担心直接使用
-- 
+
+
+
+# 工具链
+
+```bash
+安装Qt时提供的 命令工具
+$ assistant    #Qt助手 帮主文档
+$ qmake        # Qt构建器
+$ designer     # Qt图形设计师, 生成 .ui 文件, 使用 uic 转换器变成 .h 文件交给Qt 主体项目来用
+$ rcc          # Qt资源编译器   图片 音乐之类的
+$ moc          # Qt 元对象编译器
+$ qtcreator    # Qt 创造器
+```
+
