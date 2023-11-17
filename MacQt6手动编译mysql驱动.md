@@ -19,7 +19,7 @@
 >         export PATH="/opt/homebrew/opt/mysql/bin:$PATH"
 >         export LDFLAGS="-L/opt/homebrew/opt/mysql/lib"
 >         export CPPFLAGS="-I/opt/homebrew/opt/mysql/include"
->         
+>                 
 >         #qt下的 cmake
 >         export QTDIR="/Users/myName/Qt/6.6.0/macos"
 >         export QT_DIR=$QTDIR
@@ -39,8 +39,8 @@ $ brew install  mysql mysql-client
 # 初始化brew 安装的mysql 
 $ mysql_secure_installation
 
-# 启动 mysql ，并添加到开机启动  , 可以使用 brew service stop mysql  来停止
-$ brew service start mysql
+# 启动 mysql ， 可以使用 brew service stop mysql  来停止 , 如果使用 start 参数则会开机启动
+$ brew service run mysql
 ```
 
 
